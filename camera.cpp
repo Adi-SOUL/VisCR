@@ -1,4 +1,5 @@
 #include "includes/camera.h"
+#include <iostream>
 
 Camera::Camera(QWidget *widget)
     : widget(widget)
@@ -64,6 +65,7 @@ void Camera::handle(QEvent *e) {
             float xoffset = event->x() - widget->rect().center().x();
             float yoffset = widget->rect().center().y() - event->y();
             yoffset *= sensitivity;
+            xoffset *= sensitivity;
             yaw   += xoffset;
             pitch += yoffset;
             if(pitch > 1.55)         
