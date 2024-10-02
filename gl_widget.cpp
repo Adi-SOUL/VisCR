@@ -756,7 +756,7 @@ bool Widget::event(QEvent *e) {
     if(e->type()==QEvent::KeyPress) {
         QKeyEvent *event=static_cast<QKeyEvent*>(e);
         if(event->key()==Qt::Key_Escape) {
-            this -> close();
+            //doing nothing is better
         }
     }
     return QWidget::event(e);   //调用父类的事件分发函数
