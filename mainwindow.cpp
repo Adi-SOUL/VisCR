@@ -12,18 +12,20 @@ MainWindow::MainWindow(QWidget *parent)
     QString iniFilePath = QApplication::applicationDirPath() + "\\Config.ini";
     QSettings *configIniFile = new QSettings(iniFilePath, QSettings::IniFormat);
 
-    w.t = configIniFile->value("all/t").toString();
-    w.t1 = configIniFile->value("all/t_1").toString();
-    w.t2 = configIniFile->value("all/t_2").toString();
-    w.tb = configIniFile->value("all/t_b").toString();
-    w.tw = configIniFile->value("all/t_w").toString();
+    w.json_file = configIniFile->value("all/json").toString().startsWith("\\") ? QApplication::applicationDirPath() + configIniFile->value("all/json").toString() : configIniFile->value("all/json").toString();
 
-    w.set_disk_num(configIniFile->value("all/disk_num").toInt());
-    ui->spinBox->setValue(configIniFile->value("all/disk_num").toInt());
-    w.set_section_num(configIniFile->value("all/section_num").toInt());
-    ui->spinBox_3->setValue(configIniFile->value("all/section_num").toInt());
-    w.set_tendon_num(configIniFile->value("all/tendon_num").toInt());
-    ui->spinBox_2->setValue(configIniFile->value("all/tendon_num").toInt());
+    w.t = configIniFile->value("all/t").toString().startsWith("\\") ? QApplication::applicationDirPath() + configIniFile->value("all/t").toString() : configIniFile->value("all/t").toString();
+    w.t1 = configIniFile->value("all/t_1").toString().startsWith("\\") ? QApplication::applicationDirPath() + configIniFile->value("all/t_1").toString() : configIniFile->value("all/t_1").toString();
+    w.t2 = configIniFile->value("all/t_2").toString().startsWith("\\") ? QApplication::applicationDirPath() + configIniFile->value("all/t_2").toString() : configIniFile->value("all/t_2").toString();
+    w.tb = configIniFile->value("all/t_b").toString().startsWith("\\") ? QApplication::applicationDirPath() + configIniFile->value("all/t_b").toString() : configIniFile->value("all/t_b").toString();
+    w.tw = configIniFile->value("all/t_w").toString().startsWith("\\") ? QApplication::applicationDirPath() + configIniFile->value("all/t_w").toString() : configIniFile->value("all/t_w").toString();
+
+    //w.set_disk_num(configIniFile->value("all/disk_num").toInt());
+    //ui->spinBox->setValue(configIniFile->value("all/disk_num").toInt());
+    //w.set_section_num(configIniFile->value("all/section_num").toInt());
+    //ui->spinBox_3->setValue(configIniFile->value("all/section_num").toInt());
+    //w.set_tendon_num(configIniFile->value("all/tendon_num").toInt());
+    //ui->spinBox_2->setValue(configIniFile->value("all/tendon_num").toInt());
     w.set_step_of_show_position_frame(configIniFile->value("all/step").toInt());
     ui->spinBox_step->setValue(configIniFile->value("all/step").toInt());
 
@@ -51,18 +53,18 @@ MainWindow::MainWindow(QWidget *parent)
     //qDebug() << iniFilePath;
 
     //connect(ui->pushButton, SIGNAL(clicked(bool)), this, SLOT(set_ass()));
-    connect(ui->spinBox, SIGNAL(valueChanged(int)), this, SLOT(set_disk()));
-    //ui->spinBox->setValue(3);
-    ui->spinBox->setMaximum(10);
-    ui->spinBox->setMinimum(3);
-    connect(ui->spinBox_2, SIGNAL(valueChanged(int)), this, SLOT(set_tendon()));
-    //ui->spinBox_2->setValue(3);
-    ui->spinBox_2->setMaximum(4);
-    ui->spinBox_2->setMinimum(3);
-    connect(ui->spinBox_3, SIGNAL(valueChanged(int)), this, SLOT(set_section()));
-    //ui->spinBox_3->setValue(1);
-    ui->spinBox_3->setMaximum(3);
-    ui->spinBox_3->setMinimum(1);
+    //connect(ui->spinBox, SIGNAL(valueChanged(int)), this, SLOT(set_disk()));
+    ////ui->spinBox->setValue(3);
+    //ui->spinBox->setMaximum(10);
+    //ui->spinBox->setMinimum(3);
+    //connect(ui->spinBox_2, SIGNAL(valueChanged(int)), this, SLOT(set_tendon()));
+    ////ui->spinBox_2->setValue(3);
+    //ui->spinBox_2->setMaximum(4);
+    //ui->spinBox_2->setMinimum(3);
+    //connect(ui->spinBox_3, SIGNAL(valueChanged(int)), this, SLOT(set_section()));
+    ////ui->spinBox_3->setValue(1);
+    //ui->spinBox_3->setMaximum(3);
+    //ui->spinBox_3->setMinimum(1);
     connect(ui->spinBox_step, SIGNAL(valueChanged(int)), this, SLOT(set_step_of_show_position_frame()));
     ui->spinBox_step->setMinimum(1);
     ui->spinBox_step->setMaximum(214748);
@@ -182,6 +184,7 @@ void MainWindow::set_section() {
 void MainWindow::closeEvent(QCloseEvent* e) {
     QString iniFilePath = QApplication::applicationDirPath() + "\\Config.ini";
     QSettings *configIniFile = new QSettings(iniFilePath, QSettings::IniFormat);
+    configIniFile->setValue("/all/json", w.json_file);
     configIniFile -> setValue("/all/disk_num", w.disk_num);
     configIniFile -> setValue("/all/section_num", w.section_num);
     configIniFile -> setValue("/all/tendon_num", w.tendon_num);

@@ -145,7 +145,7 @@ QVector<QMatrix4x4> Connecter::sim() {
         }
 
         for (int i = 0; i < 3; i++) {
-            m(i, 3) /= 40.5;
+            m(i, 3) /= 50.f;
         }
 
         f.append(m);

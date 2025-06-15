@@ -13,8 +13,27 @@
 #include <QTimer>
 #include <QTime>
 #include <QtMath>
+#include <QList>
 #include <QKeyEvent>
+#include <QFile>
+#include <QJsonObject>
+#include <QJsonDocument>
 #include <functional>
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <limits> 
+
+struct MyVec3 {
+    float x, y, z;
+};
+
+struct MyTriangle {
+    MyVec3 normal;
+    MyVec3 vertices[3];
+    uint16_t attributeByteCount;
+};
+
 
 class Widget : public QOpenGLWidget,public QOpenGLExtraFunctions
 {
@@ -53,12 +72,92 @@ public:
     void set_texture_b(QString);
     void set_texture_w(QString);
 
+    void load_stl_files(void);
+    void load_single_stl_file(std::pair<QString, QString>);
+    bool has_stl_file = false;
+    uint32_t triangleCount;
+    QVector3D stl_center = QVector3D(0, 0, 0);
+
+    QMap<QString, QString> type_to_file_name; // type to its file name 
+
+    QMap<QString, uint32_t> type_to_count{
+        {
+            QString("base"), 1
+        },
+        {
+            QString("section_1"), 1
+        },
+        {
+            QString("section_2"), 1
+        },
+        {
+            QString("tip"), 1
+        }
+    };  // type to triangles count
+
+    QMap<QString, QVector<float>> type_to_size{
+        {
+            QString("base"), {1., 1., 1.}
+        },
+        {
+            QString("section_1"), {1., 1., 1.}
+        },
+        {
+            QString("section_2"), {1., 1., 1.}
+        },
+        {
+            QString("tip"), {1., 1., 1.}
+        }
+    };  // type to its size
+
+    QMap<QString, int> section_nums_rec{
+        {
+            QString("section_1"), -1
+        },
+        {
+            QString("section_2"), -1
+        },
+    };
+
+    bool load_json_file();
+
+    void draw_stl();
+
+    void draw_stl_file();
+
+    float disk_thickness;
+    float base_thickness;
+    float tip_thickness;
+    float total_length;
+    float continuum_length;
+    float section_length;
+    float interval;
+    float first_interval;
+    int total_disk_num = 0;
+
+    QVector<QVector3D> T_ts_all;
+    QVector<QVector3D> T_ts_1;
+    QVector<int> selectedIndices;
+    QVector<int> init_selectedIndices;
+
+    uint32_t start_point_of_lines = 1;
+    uint32_t start_point_of_section_1 = 1;
+    uint32_t start_point_of_section_2 = 1;
+    uint32_t start_point_of_tendon = 1;
+    uint32_t start_point_of_arrow = 1;
+    uint32_t start_point_of_base = 1;
+    uint32_t start_point_of_tip = 1;
+    QVector3D top_position{ 0, 0, 0 };
+
+    QVector<QMatrix4x4> init_T_sequence;
+    int sensor_num = 100;
 
     QString tb;
     QString tw;
     QString t;
     QString t1;
     QString t2;
+    QString json_file;
     int section_num = 2;
     int disk_num = 5;
     int tendon_num = 3;
@@ -82,6 +181,10 @@ public:
 
     void clear_positions();
 
+    void draw_tip_force(QVector3D, QVector3D);
+    QElapsedTimer fpsTimer;
+    int frameCount = 0;
+    float currentFPS = 0.0f;
 protected:
     virtual void initializeGL() override;
     virtual void resizeGL(int w,int h) override;
@@ -99,6 +202,7 @@ private:
 
     QWidget son;
     QVector<float> vertices;
+    QVector<float> vertices_after_stl_loaded;
     QVector<float> vertices2;
     QVector<QVector3D> cubePositions;
     QVector<QVector3D> cubePositions2;
@@ -109,6 +213,9 @@ private:
     QVector<QMatrix4x4> sub_positions_1;
 
     QOpenGLShaderProgram shaderProgram;
+    QOpenGLShaderProgram shaderProgramCheckboard;
+
+    QOpenGLBuffer instanceVBO;
     QOpenGLBuffer VBO;
     QOpenGLVertexArrayObject VAO;
 
