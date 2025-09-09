@@ -142,11 +142,14 @@ public:
 
     uint32_t start_point_of_lines = 1;
     uint32_t start_point_of_section_1 = 1;
+    uint32_t start_point_of_circle = 1;
     uint32_t start_point_of_section_2 = 1;
     uint32_t start_point_of_tendon = 1;
     uint32_t start_point_of_arrow = 1;
     uint32_t start_point_of_base = 1;
     uint32_t start_point_of_tip = 1;
+    uint32_t start_point_of_arrow_base = 0;
+	uint32_t start_point_of_arrow_hat = 0;
     QVector3D top_position{ 0, 0, 0 };
 
     QVector<QMatrix4x4> init_T_sequence;
@@ -181,7 +184,11 @@ public:
 
     void clear_positions();
 
-    void draw_tip_force(QVector3D, QVector3D);
+    void draw_tip_force(QVector3D, QVector3D, bool);
+    void draw_tip_motion(QVector3D, QVector3D, bool);
+
+	void draw_arrow(QVector3D, QVector3D, bool);
+
     QElapsedTimer fpsTimer;
     int frameCount = 0;
     float currentFPS = 0.0f;

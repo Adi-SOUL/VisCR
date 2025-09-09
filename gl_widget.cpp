@@ -3,6 +3,7 @@
 #include <iostream>
 #include <QtMath>
 #include <QDebug>
+#include <QtMath>
 #include <QOpenGLFramebufferObject>
 #define _CRT_SECURE_NO_WARNINGS
 constexpr auto PI = 3.14159265;
@@ -187,10 +188,26 @@ void Widget::initializeGL() {
 	}
 	QMatrix4x4 zeroMatrix;
 	zeroMatrix.fill(0.0f);
-	zeroMatrix(0, 0) = 0.f;
+	zeroMatrix(0, 0) = 20.f;
 	zeroMatrix(0, 1) = 20.f;
 	zeroMatrix(0, 2) = 0.f;
 	init_T_sequence.push_back(zeroMatrix);
+
+	for (int i = 0; i < sensor_num; i++) {
+		QMatrix4x4 temp_matrix;
+		temp_matrix.fill(0.f);
+		temp_matrix(0, 0) = 0.f;
+		temp_matrix(0, 0) = 0.f;
+		temp_matrix(0, 0) = qSin(i * 2 * M_PI / sensor_num);
+		// matrix.translate(QVector3D(qSin(i * 2 * M_PI / sensor_num), 0.f, 0.f) / 50.f);
+		init_T_sequence.push_back(temp_matrix);
+	}
+	QMatrix4x4 zeroMatrix2;
+	zeroMatrix2.fill(0.0f);
+	zeroMatrix2(0, 0) = 30.f;
+	zeroMatrix2(0, 1) = 0.f;
+	zeroMatrix2(0, 2) = 0.f;
+	init_T_sequence.push_back(zeroMatrix2);
 
 	int N = total_disk_num + 1;  // 要绘制的 disk 数量（包括首尾）
 	for (int j = 0; j < N; ++j) {
@@ -268,7 +285,7 @@ void Widget::paintGL() {
 	}
 	else {
 		start = true;
-		sensor_num = wtransforms.size() - 1;
+		sensor_num = int((wtransforms.size() - 2) / 2) ;
 		selectedIndices.clear();
 		// Step 1: 计算均匀分布的 sensor 索引
 		int N = total_disk_num + 1;  // 要绘制的 disk 数量（包括首尾）
@@ -284,13 +301,13 @@ void Widget::paintGL() {
 	}
 
 	draw_floor();
-	frameCount++;
-	if (fpsTimer.elapsed() >= 1000) { // 每秒统计一次
-		currentFPS = frameCount * 1000.0f / fpsTimer.elapsed();
-		this->setWindowTitle(QString::number(currentFPS));
-		frameCount = 0;
-		fpsTimer.restart();
-	}
+	//frameCount++;
+	//if (fpsTimer.elapsed() >= 1000) { // 每秒统计一次
+	//	currentFPS = frameCount * 1000.0f / fpsTimer.elapsed();
+	//	this->setWindowTitle(QString::number(currentFPS));
+	//	frameCount = 0;
+	//	fpsTimer.restart();
+	//}
 	// this->setWindowTitle(type_to_file_name[QString("base")] + "123");
 }
 
@@ -375,7 +392,8 @@ void Widget::load_stl_files() {
 	}
 	start_point_of_arrow = 12;
 	start_point_of_base = start_point_of_arrow + type_to_count[QString("arrow")] * 3;
-	start_point_of_section_1 = start_point_of_base + type_to_count[QString("base")] * 3;
+	start_point_of_circle = start_point_of_base + type_to_count[QString("base")] * 3;
+	start_point_of_section_1 = start_point_of_circle + type_to_count[QString("circle")] * 3;
 	start_point_of_section_2 = start_point_of_section_1 + type_to_count[QString("section_1")] * 3;
 	start_point_of_tendon = start_point_of_section_2 + type_to_count[QString("section_2")] * 3;
 	start_point_of_tip = start_point_of_tendon + type_to_count[QString("tendon")] * 3;
@@ -453,110 +471,6 @@ void Widget::load_single_stl_file(std::pair<QString, QString> this_pair) {
 	this->has_stl_file = true;
 }
 
-void Widget::draw_stl() {
-	if (!has_stl_file) return;
-
-	shaderProgram.setUniformValue("s", 1);
-	QMatrix4x4 I;
-	QMatrix4x4 scale_tendon; scale_tendon.scale(1.f);
-	QMatrix4x4 scale_backbone; scale_backbone.scale(2.f, 1.f, 2.f);
-
-	uint32_t tendon_count = type_to_count["tendon"];
-	uint32_t half_tendon_count = tendon_count / 2;
-	uint32_t section_1_count = type_to_count["section_1"];
-	uint32_t section_2_count = type_to_count["section_2"];
-
-	VAO.bind();
-	instanceVBO.bind();
-
-	// 写入所有 instance matrix
-	instanceVBO.write(0, wtransforms.constData(), sizeof(QMatrix4x4) * (sensor_num - 1));
-
-	// === 渲染骨架 ===
-	texture2.bind(2);
-	shaderProgram.setUniformValue("ourTexture", 2);
-	glDrawArraysInstanced(GL_TRIANGLES, start_point_of_tendon, half_tendon_count * 3, sensor_num - 1);
-
-	// === 渲染腱（4条）===
-	texture1.bind(1);
-	shaderProgram.setUniformValue("ourTexture", 1);
-
-	QVector<QMatrix4x4> tendon_instances;
-	for (int i = 0; i < wtransforms.size() - 1; ++i) {
-		for (const auto& offset : T_ts_all) {
-			QMatrix4x4 tendon_model = wtransforms[i];
-			tendon_model.translate(offset);
-			tendon_instances.push_back(tendon_model);
-		}
-	}
-	instanceVBO.write(0, tendon_instances.data(), sizeof(QMatrix4x4) * tendon_instances.size());
-	glDrawArraysInstanced(GL_TRIANGLES, start_point_of_tendon, half_tendon_count * 3, tendon_instances.size());
-
-	// === 渲染中段 disks ===
-	texture.bind(0);
-	shaderProgram.setUniformValue("ourTexture", 0);
-
-	QVector<QMatrix4x4> disk_instances;
-	const bool has_section2 = section_nums_rec.contains("section_2") && section_nums_rec["section_2"] != -1;
-	int mid_start = 1, mid_end = selectedIndices.size() - 1;
-	for (int k = mid_start; k < mid_end; ++k) {
-		int i = selectedIndices[k];
-		disk_instances.push_back(wtransforms[i]);
-	}
-	instanceVBO.write(0, disk_instances.data(), sizeof(QMatrix4x4) * disk_instances.size());
-	if (has_section2) {
-		glDrawArraysInstanced(GL_TRIANGLES, start_point_of_section_1, section_1_count * 3, disk_instances.size() / 2);
-		glDrawArraysInstanced(GL_TRIANGLES, start_point_of_section_2, section_2_count * 3, disk_instances.size() / 2);
-	}
-	else {
-		glDrawArraysInstanced(GL_TRIANGLES, start_point_of_section_1, section_1_count * 3, disk_instances.size());
-	}
-
-	// === 渲染 Base 和 Tip ===
-	shaderProgram.setUniformValue("model_scale", I);
-	glDrawArrays(GL_TRIANGLES, start_point_of_base, type_to_count["base"] * 3);
-
-	shaderProgram.setUniformValue("model_scale", wtransforms.last());
-	glDrawArrays(GL_TRIANGLES, start_point_of_tip, type_to_count["tip"] * 3);
-
-	// === 末端位置 top_position 更新 ===
-	QMatrix4x4 tip_transform = wtransforms.last();
-	tip_transform.translate(QVector3D(0.f, type_to_size["tip"][2], 0.f) / 50.f);
-	top_position = QVector3D(tip_transform(0, 3), tip_transform(1, 3), tip_transform(2, 3));
-
-	// === 末端力 ===
-	if (!isZeroMatrix(wtransforms.last())) {
-		QVector3D force = QVector3D(wtransforms.last()(0, 0), wtransforms.last()(0, 2), wtransforms.last()(0, 1)) / 50.f;
-		draw_tip_force(top_position, top_position + force);
-	}
-
-	// === 绘制轨迹 ===
-	if (start) {
-		positions.append(tip_transform);
-		QVector<float> latest_vertex_data;
-		latest_vertex_data << tip_transform(0, 3) << tip_transform(1, 3) << tip_transform(2, 3)
-			<< 1.f << 1.f << 0.f << 1.f << 0.f;
-		vertices += latest_vertex_data;
-
-		VBO.bind();
-		VBO.write(vertices.size() * sizeof(float) - latest_vertex_data.size() * sizeof(float),
-			latest_vertex_data.constData(),
-			latest_vertex_data.size() * sizeof(float));
-	}
-
-	if (true) {
-		shaderProgram.setUniformValue("model", I);
-		shaderProgram.setUniformValue("scale", I);
-		glLineWidth(.1f * line_width_factor);
-		shaderProgram.setUniformValue("color", color_of_position_1);
-		glDrawArrays(GL_LINE_STRIP, start_point_of_lines, positions.size());
-	}
-
-	if (show_base_frame) {
-		draw_base_frame();
-	}
-}
-
 void Widget::draw_stl_file() {
 	if (!has_stl_file) {
 		return;
@@ -583,7 +497,6 @@ void Widget::draw_stl_file() {
 			auto model_scale = wtransforms[i] * scale_backbone;
 			shaderProgram.setUniformValue("model_scale", model_scale);
 			this->glDrawArrays(GL_TRIANGLES, start_point_of_tendon, helf_tendon_count * 3);
-
 
 			shaderProgram.setUniformValue("ourTexture", 1);
 
@@ -646,9 +559,29 @@ void Widget::draw_stl_file() {
 		if (!isZeroMatrix(wtransforms[sensor_num])) {
 			auto force = QVector3D(wtransforms[sensor_num](0, 0), wtransforms[sensor_num](0, 1), wtransforms[sensor_num](0, 2)) / 50.f;
 			// auto force = wtransforms[sensor_num] / 50.f;
-			draw_tip_force(top_position, top_position + force);
+			draw_tip_force(top_position, top_position + force, false);
 		}
 
+		for (int i = 0; i < sensor_num; ++i) {
+			int dis_force_index = i + sensor_num + 1;
+			auto dis_force = QVector3D(wtransforms[dis_force_index](0, 0), wtransforms[dis_force_index](0, 1), wtransforms[dis_force_index](0, 2)) / 50.f;
+			auto current_position = QVector3D(wtransforms[i](0, 3), wtransforms[i](1, 3), wtransforms[i](2, 3));
+			// auto dis_force = QVector3D(1, 2, 3);
+			draw_tip_force(current_position, current_position + dis_force, true);
+		}
+
+		// motion
+		if (!isZeroMatrix(wtransforms[sensor_num * 2 + 1])) {
+			//exit(12);
+			auto motion = QVector3D(wtransforms[sensor_num * 2 + 1](0, 0), wtransforms[sensor_num * 2 + 1](0, 1), wtransforms[sensor_num * 2 + 1](0, 2)) / 50.f;
+			// auto force = wtransforms[sensor_num] / 50.f;
+			draw_tip_motion(top_position, top_position + motion, false);
+		}
+
+		
+		//if (!isZeroMatrix(wtransforms[sensor_num * 2 + 1])) {
+
+		//}
 		// positions
 		if (start) {
 			positions.append(tip_transform);
@@ -669,7 +602,6 @@ void Widget::draw_stl_file() {
 			GLsizei size_of_positions = positions.size();
 			this->glDrawArrays(GL_LINE_STRIP, start_point_of_lines, size_of_positions);
 		}
-
 	}
 
 	if (show_base_frame) {
@@ -851,7 +783,59 @@ void Widget::draw_base_frame() {
 	this->glDrawArrays(GL_TRIANGLES, start_point_of_arrow, arrow_count * 3);
 }
 
-void Widget::draw_tip_force(QVector3D from, QVector3D to) {
+void Widget::draw_tip_motion(QVector3D from, QVector3D to, bool clockwise) {
+	QVector3D defaultDir(0, 1, 0);
+	QVector3D targetDir = to - from;
+	targetDir.normalize();
+	QVector3D rotationAxis = QVector3D::crossProduct(defaultDir, targetDir);
+	float angle = std::acos(QVector3D::dotProduct(defaultDir, targetDir));
+
+	// 如果方向几乎一致/相反，可能需要特殊处理
+	QMatrix4x4 rotation;
+	if (rotationAxis.length() < 1e-6) {
+		if (QVector3D::dotProduct(defaultDir, targetDir) < 0) {
+			// 方向相反：绕任意垂直轴旋转 180 度
+			rotation.rotate(180, 1, 0, 0);  // 或任何与 defaultDir 垂直的轴
+		}
+		// 否则不旋转
+	}
+	else {
+		rotationAxis.normalize();
+		rotation.rotate(qRadiansToDegrees(angle), rotationAxis);
+	}
+	float length = (to - from).length();
+
+	QMatrix4x4 translation2;
+	translation2.translate(from);
+
+	QMatrix4x4 translation3;
+	translation3.translate(QVector3D(0, length * 5 * 13 / 50, 0));
+
+	QMatrix4x4 translation;
+	translation.translate(from);
+	shaderProgram.setUniformValue("s", 0);
+	uint32_t circle_count = type_to_count[QString("circle")];
+	uint32_t arrow_count = type_to_count[QString("arrow")];
+	
+	QMatrix4x4 scale2;
+	scale2.scale(1.5f);
+	QMatrix4x4 rotation2;
+	//if (clockwise) {
+	//	rotation.rotate(180, 1, 0, 0);
+	//}
+	shaderProgram.setUniformValue("model_scale", translation2 * rotation * translation3 * scale2);
+	// shaderProgram.setUniformValue("scale", scale);
+	shaderProgram.setUniformValue("color", QVector4D(0.f, 140.f, 100.f, 255.f));
+	this->glDrawArrays(GL_TRIANGLES, start_point_of_circle, circle_count * 3);\
+
+	QMatrix4x4 scale;
+	scale.scale(5.f, length * 10, 5.f);
+	shaderProgram.setUniformValue("model_scale", translation * rotation * scale);
+	this->glDrawArrays(GL_TRIANGLES, start_point_of_arrow, arrow_count * 3);
+	// this->setWindowTitle(QString(type_to_file_name["circle"]) + "123");
+}
+
+void Widget::draw_tip_force(QVector3D from, QVector3D to, bool dis) {
 	QVector3D defaultDir(0, 1, 0);
 	QVector3D targetDir = to - from;
 	targetDir.normalize();
@@ -876,11 +860,24 @@ void Widget::draw_tip_force(QVector3D from, QVector3D to) {
 	shaderProgram.setUniformValue("s", 0);
 	uint32_t arrow_count = type_to_count[QString("arrow")];
 
+	float length = (to - from).length();
 	QMatrix4x4 scale;
-	scale.scale(5.f);
+	if (dis) {
+		scale.scale(5.f, length * 300, 5.f);
+	}
+	else {
+		scale.scale(5.f, length * 10, 5.f);
+	}
+	
 	shaderProgram.setUniformValue("model_scale", translation * rotation * scale);
 	// shaderProgram.setUniformValue("scale", scale);
-	shaderProgram.setUniformValue("color", QVector4D(120.f, 0.f, 120.f, 255.f));
+	if (dis) {
+		shaderProgram.setUniformValue("color", QVector4D(120.f, 120.f, 0.f, 255.f));
+	}
+	else {
+		shaderProgram.setUniformValue("color", QVector4D(120.f, 0.f, 120.f, 255.f));
+	}
+	
 	this->glDrawArrays(GL_TRIANGLES, start_point_of_arrow, arrow_count * 3);
 }
 
