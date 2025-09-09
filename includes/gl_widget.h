@@ -185,9 +185,9 @@ public:
     void clear_positions();
 
     void draw_tip_force(QVector3D, QVector3D, bool);
-    void draw_tip_motion(QVector3D, QVector3D, bool);
+    void draw_tip_moment(QVector3D, QVector3D, bool);
 
-	void draw_arrow(QVector3D, QVector3D, bool);
+	// void draw_arrow(QVector3D, QVector3D, bool);
 
     QElapsedTimer fpsTimer;
     int frameCount = 0;

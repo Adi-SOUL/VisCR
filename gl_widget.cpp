@@ -566,16 +566,13 @@ void Widget::draw_stl_file() {
 			int dis_force_index = i + sensor_num + 1;
 			auto dis_force = QVector3D(wtransforms[dis_force_index](0, 0), wtransforms[dis_force_index](0, 1), wtransforms[dis_force_index](0, 2)) / 50.f;
 			auto current_position = QVector3D(wtransforms[i](0, 3), wtransforms[i](1, 3), wtransforms[i](2, 3));
-			// auto dis_force = QVector3D(1, 2, 3);
 			draw_tip_force(current_position, current_position + dis_force, true);
 		}
 
-		// motion
+		// draw_tip_moment
 		if (!isZeroMatrix(wtransforms[sensor_num * 2 + 1])) {
-			//exit(12);
-			auto motion = QVector3D(wtransforms[sensor_num * 2 + 1](0, 0), wtransforms[sensor_num * 2 + 1](0, 1), wtransforms[sensor_num * 2 + 1](0, 2)) / 50.f;
-			// auto force = wtransforms[sensor_num] / 50.f;
-			draw_tip_motion(top_position, top_position + motion, false);
+			auto moment = QVector3D(wtransforms[sensor_num * 2 + 1](0, 0), wtransforms[sensor_num * 2 + 1](0, 1), wtransforms[sensor_num * 2 + 1](0, 2)) / 50.f;
+			draw_tip_moment(top_position, top_position + moment, false);
 		}
 
 		
@@ -783,7 +780,7 @@ void Widget::draw_base_frame() {
 	this->glDrawArrays(GL_TRIANGLES, start_point_of_arrow, arrow_count * 3);
 }
 
-void Widget::draw_tip_motion(QVector3D from, QVector3D to, bool clockwise) {
+void Widget::draw_tip_moment(QVector3D from, QVector3D to, bool clockwise) {
 	QVector3D defaultDir(0, 1, 0);
 	QVector3D targetDir = to - from;
 	targetDir.normalize();
