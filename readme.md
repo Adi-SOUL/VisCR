@@ -22,7 +22,70 @@ This project is a subproject of [Models-in-one](https://adi-soul.github.io/Model
 1. Download the released program on [this page](https://github.com/Adi-SOUL/VisCR/releases);
 2. Download the 'example' folder in the source code.
 ### Steps:
-1. realize your own `default_one_step` function in `main.py`;
+1. Setup the program. Fill the path of setup `.json` file in the `Config.ini`. The content of the `.json` file should be like this one but **without any comment**;
+```json
+{
+	"files":{
+		"arrow": { // arrow model for coordinate system and tip force
+			"file_path": "D:/Documents/VisCR/STL_files/arrow.STL",
+			"size": {
+				"x": "1.f",  // size in mm
+				"y": "1.f",
+				"z": "13.f"
+			}
+		},
+		"base": { 
+			"file_path": "D:/Documents/VisCR/STL_files/base_disk.STL",
+			"size": {
+				"x": "24.f",
+				"y": "24.f",
+				"z": "12.f"
+			}
+		},
+		"section_1": { // model for disks
+			"file_path": "D:/Documents/VisCR/STL_files/mid_disk_1.STL",
+			"size": {
+				"x": "24.f",
+				"y": "24.f",
+				"z": "1.8f"
+			}
+		},
+		"section_2": {
+			"file_path": "D:/Documents/VisCR/STL_files/mid_disk_2.STL",
+			"size": {
+				"x": "24.f",
+				"y": "24.f",
+				"z": "1.8f"
+			}
+		},
+		"tendon": {
+			"file_path": "D:/Documents/VisCR/STL_files/tendon.STL",
+			"size": {
+				"x": ".5f",
+				"y": ".5f",
+				"z": "3.4f"
+			}
+		},
+		"tip": {
+			"file_path": "D:/Documents/VisCR/STL_files/tip_disk.STL",
+			"size": {
+				"x": "24.f",
+				"y": "24.f",
+				"z": "12.f"
+			}
+		}
+	},
+	"parameters":{
+		"total_length": "324.f", // also in mm
+		"section_number": "2",
+		"disk_number_section_1": "6", // disk number of each section 
+		"disk_number_section_2": "6" // -1 if section 2 does not exist
+	}
+}
+
+```
+
+2. Realize your own `default_one_step` function in `main.py`;
 
 **NOTE:** This function accepts an int type variable to identify the subscript of the current simulation step and returns an `ndarray` list. The physical meaning of this function is: Returns the homogeneous transformation matrix of **each point** of the continuum robot starting from the start point during the `Step: int` running step. For example:
 ```python
@@ -38,8 +101,8 @@ def sample_func(step: int) -> list[numpy.ndarray]:
 	return res
 ```
 
-2. Start the VisCR program, click "start" at its bottom;
-3. Run `main.py`
+3. Start the VisCR program, click "start" at its bottom;
+4. Run `main.py`
 
 That is all you need to do!
 
